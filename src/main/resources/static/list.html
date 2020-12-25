@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>水果系统</title>
+    <script src="vue/vue.js"></script>
+    <script src="vue/axios.min.js"></script>
+    <script src="vue/index.js"></script>
+    <link rel="stylesheet" href="vue/index.css">
+    <link href="image/title.png" rel="shortcut icon">
+    <style>
+        #data {
+            width: 70%;
+            height: 100%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="data">
+        <el-table
+                :data="tableData"
+                style="width: 100%;display:block;margin: 0 auto">
+            <!--            <el-table-column label="ID" prop="fid" width="180"></el-table-column>-->
+            <el-table-column label="序号" type="index" width="180"></el-table-column>
+            <el-table-column
+                    label="水果名称"
+                    width="180">
+                <template slot-scope="scope">
+                    <el-popover trigger="hover" placement="top">
+                        <p>价格: {{ scope.row.price }}</p>
+                        <p>单位: {{ scope.row.unit }}</p>
+                        <div slot="reference" class="name-wrapper">
+                            <el-tag size="medium">{{ scope.row.name }}</el-tag>
+                        </div>
+                    </el-popover>
+                </template>
+            </el-table-column>
+            <el-table-column label="价格" sortable prop="price" width="180"></el-table-column>
+            <el-table-column label="单位" prop="unit" width="180"></el-table-column>
+            <el-table-column label="操作" align="center">
+                <template slot-scope="scope">
+                    <el-button
+                            size="mini"
+                            type="primary"
+                            @click="add(scope.$index, scope.row)">添加
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            @click="edit(scope.$index, scope.row)">编辑
+                    </el-button>
+                    <el-button
+                            size="mini"
+                            type="danger"
+                            @click="remove(scope.$index, scope.row)">删除
+                    </el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+        <el-dialog width="30%" :title="title" :center="true" :visible.sync="dialogFormVisible">
+            <el-form ref="myForm" :rules="rules" :model="form">
+                <el-form-item label="水果名称" prop="name" :label-width="formLabelWidth">
+                    <el-input v-model="form.name" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="价格" prop="price" :label-width="formLabelWidth">
+                    <el-input v-model="form.price" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="单位" prop="unit" :label-width="formLabelWidth">
+                    <el-input v-model="form.unit" autocomplete="off"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible = false;active=false">取 消</el-button>
+                <el-button type="primary" @click="commit">确 定</el-button>
+            </div>
+        </el-dialog>
+    </div>
+</div>
+</body>
+<script>
+    const app = new Vue({
+        el: '#app',
+        data() {
+            return {
+                tableData: [],
+                dialogFormVisible: false,
+                formLabelWidth: '100px',
+                title: '添加',
+                form: {
+                    name: '',
+                    price: '',
+                    unit: ''
+                },
+                fid: '',
+                rules: {
+                    name: [{required: true, message: '请输入水果名称', trigger: 'blur'}],
+                    price: [{required: true, message: '请输入水果单价', trigger: 'blur'}],
+                    unit: [{required: true, message: '请输入水果单位', trigger: 'blur'}]
+                }
+            }
+        },
+        async created() {
+            let data = await axios.get('http://localhost/list');
+            this.tableData = data.data
+        },
+        methods: {
+            list() {
+                axios.get('http://localhost/list').then(value => {
+                    this.tableData = value.data
+                })
+            },
+            add(index, row) {
+                this.title = '添加'
+                this.form.name = ''
+                this.form.unit = ''
+                this.form.price = ''
+                this.dialogFormVisible = true
+            },
+            remove(index, row) {
+                this.$confirm('此操作将永久删除该记录, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(async () => {
+                    let data = await axios.get('http://localhost/remove?fid=' + row.fid)
+                    if (data.data == 1) {
+                        this.$message({
+                            message: '删除成功',
+                            type: 'success',
+                            showClose: true
+                        });
+                    }
+                    location.reload();
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除',
+                        showClose: true
+                    });
+                });
+            },
+            async edit(index, row) {
+                this.title = '编辑'
+                this.form.name = row.name
+                this.form.price = row.price
+                this.form.unit = row.unit
+                this.dialogFormVisible = true
+                this.fid = row.fid
+            },
+            async commit() {
+                this.$refs['myForm'].validate().then(async value => {
+                    if (!value) {
+                        this.$message({
+                            message: '提交失败',
+                            type: 'error',
+                            showClose: true
+                        });
+                        return false;
+                    } else {
+                        if (this.title == '编辑') {
+                            let data = await axios.post('http://localhost/update', {fid: this.fid, ...this.form})
+                            if (data.data == 1) {
+                                this.$message({
+                                    message: '修改成功',
+                                    type: 'success',
+                                    showClose: true
+                                });
+                            }
+                        } else {
+                            let data = await axios.post('http://localhost/add', this.form)
+                            if (data.data == 1) {
+                                this.$message({
+                                    message: '添加成功',
+                                    type: 'success',
+                                    showClose: true
+                                });
+                            }
+                        }
+                        this.dialogFormVisible = false
+                        this.active = false
+                        this.form.name = ''
+                        this.form.unit = ''
+                        this.form.price = ''
+                        this.list()
+                    }
+                })
+            }
+        }
+    })
+</script>
+</html>

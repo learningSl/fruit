@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.fruit.dao.FruitDao">
+    <select id="list" resultType="com.example.fruit.bean.Fruit">
+        select * from t_fruit
+    </select>
+    <insert id="insert" parameterType="com.example.fruit.bean.Fruit">
+        insert into t_fruit (name,price,unit) values (#{name},#{price},#{unit})
+    </insert>
+    <delete id="remove" parameterType="int">
+        delete from t_fruit where fid=#{id}
+    </delete>
+    <update id="update" parameterType="com.example.fruit.bean.Fruit">
+        update t_fruit set name=#{name},price=#{price},unit=#{unit} where fid=#{fid}
+    </update>
+</mapper>
